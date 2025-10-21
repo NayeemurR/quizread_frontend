@@ -145,7 +145,11 @@
         <div class="quiz-header">
           <h3>Quiz ⏳</h3>
         </div>
-        <div class="quiz-content">
+        <div v-if="quizLoading" class="quiz-loading">
+          <div class="spinner"></div>
+          <p>Generating quiz...</p>
+        </div>
+        <div v-else class="quiz-content">
           <p class="quiz-question">{{ currentQuiz.question }}</p>
           <div class="quiz-options">
             <label
@@ -163,7 +167,7 @@
             </label>
           </div>
         </div>
-        <div class="quiz-actions">
+        <div v-if="!quizLoading" class="quiz-actions">
           <button
             @click="submitQuiz"
             class="submit-btn"
@@ -179,9 +183,17 @@
 
 <script>
 import { apiService } from "../services/apiService.js";
+import { checkpointQuizService } from "../services/checkpointQuizService.js";
+import { useAuth } from "../stores/auth.js";
 
 export default {
   name: "Reading",
+  setup() {
+    const { userId } = useAuth();
+    return {
+      userId,
+    };
+  },
   data() {
     return {
       book: {},
@@ -208,12 +220,14 @@ export default {
       // Quiz state
       showQuiz: false,
       currentQuiz: {
+        quizId: null,
         question: "",
         options: [],
         correctAnswer: 0,
       },
       selectedAnswer: null,
-      quizInterval: 2, // Quiz every 2 pages
+      quizInterval: 3, // Quiz every 3 pages
+      quizLoading: false,
     };
   },
   computed: {
@@ -281,7 +295,7 @@ export default {
       try {
         // Initialize reading progress session
         const result = await apiService.readingProgress.initializeProgress(
-          "demo-user-123", // Current user ID
+          this.userId, // Current user ID
           this.$route.params.bookId,
           this.totalPages,
           5, // Quiz interval (every 5 pages)
@@ -401,10 +415,66 @@ export default {
       }
     },
 
-    triggerQuiz() {
-      // Generate a sample quiz question
+    async triggerQuiz() {
+      this.quizLoading = true;
+      try {
+        // Create quiz directly from PDF content using the new endpoint
+        const quizResponse = await checkpointQuizService.createQuizFromPDF(
+          this.userId, // Current user ID
+          this.$route.params.bookId,
+          this.currentPage,
+          2 // Extract last 2 pages
+        );
+
+        console.log("quiz response,", quizResponse);
+
+        if ("error" in quizResponse) {
+          console.error("Failed to create quiz from PDF:", quizResponse.error);
+          this.showFallbackQuiz();
+          return;
+        }
+
+        // // Get the quiz details
+        // const quizDetails = await checkpointQuizService.getQuiz(
+        //   quizResponse.quizId
+        // );
+
+        this.currentQuiz = {
+          quizId: quizResponse.quiz._id,
+          question: quizResponse.quiz.question,
+          options: quizResponse.quiz.answers,
+          correctAnswer: quizResponse.quiz.correctIndex,
+        };
+        this.selectedAnswer = null;
+        this.showQuiz = true;
+
+        // if (quizDetails && quizDetails.length > 0) {
+        //   const quiz = quizDetails[0];
+        //   this.currentQuiz = {
+        //     quizId: quizResponse.quizId,
+        //     question: quiz.question,
+        //     options: quiz.options,
+        //     correctAnswer: quiz.correctAnswer,
+        //   };
+        //   this.selectedAnswer = null;
+        //   this.showQuiz = true;
+        // } else {
+        //   console.error("No quiz details returned");
+        //   this.showFallbackQuiz();
+        // }
+      } catch (error) {
+        console.error("Failed to create quiz:", error);
+        this.showFallbackQuiz();
+      } finally {
+        this.quizLoading = false;
+      }
+    },
+
+    showFallbackQuiz() {
+      // Fallback to dummy quiz if API fails
       this.currentQuiz = {
-        question: `What is the main topic discussed on page ${this.currentPage}?`,
+        quizId: null,
+        question: `What is the main topic discussed on the last 2 pages?`,
         options: [
           "The introduction of new concepts",
           "A detailed analysis of previous topics",
@@ -417,19 +487,57 @@ export default {
       this.showQuiz = true;
     },
 
-    submitQuiz() {
+    async submitQuiz() {
       if (this.selectedAnswer === null) return;
 
-      const isCorrect = this.selectedAnswer === this.currentQuiz.correctAnswer;
+      try {
+        if (this.currentQuiz.quizId) {
+          // Submit to real API
+          const result = await checkpointQuizService.submitQuizAnswer(
+            this.userId, // Current user ID
+            this.currentQuiz.quizId,
+            this.selectedAnswer
+          );
 
-      if (isCorrect) {
-        alert("Correct! Well done! 🎉");
-      } else {
-        alert(
-          `Incorrect. The correct answer was: ${
-            this.currentQuiz.options[this.currentQuiz.correctAnswer]
-          }`
-        );
+          if (result.isCorrect) {
+            alert("Correct! Well done! 🎉");
+          } else {
+            alert(
+              `Incorrect. The correct answer was: ${
+                this.currentQuiz.options[this.currentQuiz.correctAnswer]
+              }`
+            );
+          }
+        } else {
+          // Fallback to local validation
+          const isCorrect =
+            this.selectedAnswer === this.currentQuiz.correctAnswer;
+
+          if (isCorrect) {
+            alert("Correct! Well done! 🎉");
+          } else {
+            alert(
+              `Incorrect. The correct answer was: ${
+                this.currentQuiz.options[this.currentQuiz.correctAnswer]
+              }`
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Failed to submit quiz:", error);
+        // Fallback to local validation
+        const isCorrect =
+          this.selectedAnswer === this.currentQuiz.correctAnswer;
+
+        if (isCorrect) {
+          alert("Correct! Well done! 🎉");
+        } else {
+          alert(
+            `Incorrect. The correct answer was: ${
+              this.currentQuiz.options[this.currentQuiz.correctAnswer]
+            }`
+          );
+        }
       }
 
       this.showQuiz = false;
@@ -437,9 +545,10 @@ export default {
     },
 
     triggerAnnotation() {
-      alert(
-        "Time to make an annotation! This will be implemented in the next phase."
-      );
+      console.log("Triggering annotation");
+      // alert(
+      //   "Time to make an annotation! This will be implemented in the next phase."
+      // );
       // TODO: Implement annotation functionality
     },
 
@@ -900,6 +1009,31 @@ export default {
 
 .quiz-content {
   padding: 2rem;
+}
+
+.quiz-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.quiz-loading .spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+.quiz-loading p {
+  color: #6c757d;
+  font-size: 1.1rem;
+  margin: 0;
 }
 
 .quiz-question {

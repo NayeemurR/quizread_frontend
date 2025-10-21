@@ -18,6 +18,48 @@ export const checkpointQuizService = {
   },
 
   /**
+   * Get quiz context from PDF pages
+   * @param {string} userId - User ID
+   * @param {string} bookId - Book ID
+   * @param {number} currentPage - Current page number
+   * @param {number} pageRange - Number of pages to extract (default: 2)
+   * @returns {Promise<{content: string} | {error: string}>}
+   */
+  async getQuizContext(userId, bookId, currentPage, pageRange = 2) {
+    const response = await httpClient.post(
+      API_CONFIG.ENDPOINTS.CHECKPOINT_QUIZ.GET_QUIZ_CONTEXT,
+      {
+        userId,
+        bookId,
+        currentPage,
+        pageRange,
+      }
+    );
+    return response.data;
+  },
+
+  /**
+   * Create a quiz directly from PDF content
+   * @param {string} userId - User ID
+   * @param {string} bookId - Book ID
+   * @param {number} currentPage - Current page number
+   * @param {number} pageRange - Number of pages to extract (default: 2)
+   * @returns {Promise<{quizId: string} | {error: string}>}
+   */
+  async createQuizFromPDF(userId, bookId, currentPage, pageRange = 2) {
+    const response = await httpClient.post(
+      API_CONFIG.ENDPOINTS.CHECKPOINT_QUIZ.CREATE_QUIZ_FROM_PDF,
+      {
+        userId,
+        bookId,
+        currentPage,
+        pageRange,
+      }
+    );
+    return response.data;
+  },
+
+  /**
    * Submit a quiz answer
    * @param {string} userId - User ID
    * @param {string} quizId - Quiz ID

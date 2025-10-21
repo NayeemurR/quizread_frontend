@@ -11,6 +11,8 @@ export const API_CONFIG = {
     // CheckpointQuiz endpoints
     CHECKPOINT_QUIZ: {
       CREATE_QUIZ: "/api/CheckpointQuiz/createQuiz",
+      CREATE_QUIZ_FROM_PDF: "/api/CheckpointQuiz/createQuizFromPDF",
+      GET_QUIZ_CONTEXT: "/api/CheckpointQuiz/getQuizContext",
       SUBMIT_QUIZ_ANSWER: "/api/CheckpointQuiz/submitQuizAnswer",
       GET_QUIZ: "/api/CheckpointQuiz/_getQuiz",
       GET_QUIZ_ATTEMPTS: "/api/CheckpointQuiz/_getQuizAttempts",
