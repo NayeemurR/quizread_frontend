@@ -56,26 +56,15 @@
             />
           </div>
           <div class="form-group">
-            <label for="totalPages">Total Pages</label>
-            <input
-              type="number"
-              id="totalPages"
-              v-model.number="newBook.totalPages"
-              required
-              min="1"
-              placeholder="Enter total pages"
-            />
-          </div>
-          <div class="form-group">
             <label for="bookFile">Book File</label>
             <input
               type="file"
               id="bookFile"
               @change="handleFileUpload"
-              accept=".pdf,.epub,.txt"
+              accept=".pdf"
               required
             />
-            <small>Supported formats: PDF, EPUB, TXT</small>
+            <small>Supported formats: PDF only</small>
           </div>
           <div class="form-actions">
             <button type="button" @click="closeModal" class="cancel-btn">
@@ -110,7 +99,6 @@ export default {
       addingBook: false,
       newBook: {
         title: "",
-        totalPages: null,
         file: null,
       },
       // For demo purposes, using a hardcoded user ID
@@ -156,40 +144,47 @@ export default {
     handleFileUpload(event) {
       const file = event.target.files[0];
       if (file) {
+        // Validate file type
+        if (file.type !== "application/pdf") {
+          alert("Please select a PDF file");
+          event.target.value = "";
+          return;
+        }
+
+        // Validate file size (e.g., max 50MB)
+        const maxSize = 50 * 1024 * 1024; // 50MB
+        if (file.size > maxSize) {
+          alert("File size must be less than 50MB");
+          event.target.value = "";
+          return;
+        }
+
         this.newBook.file = file;
-        // Generate a mock storage URL for demo purposes
-        this.newBook.storageUrl = `gs://quizread-books/${Date.now()}-${
-          file.name
-        }`;
       }
     },
 
     async addBook() {
-      if (
-        !this.newBook.title ||
-        !this.newBook.totalPages ||
-        !this.newBook.file
-      ) {
+      if (!this.newBook.title || !this.newBook.file) {
         alert("Please fill in all fields and select a file");
         return;
       }
 
       this.addingBook = true;
       try {
-        const result = await apiService.library.addBook(
+        // Use the new upload workflow
+        const result = await apiService.library.uploadBook(
           this.currentUserId,
           this.newBook.title,
-          this.newBook.totalPages,
-          this.newBook.storageUrl
+          this.newBook.file
         );
 
         // Add the new book to the local list
         const newBook = {
           _id: result.bookId,
           title: this.newBook.title,
-          totalPages: this.newBook.totalPages,
+          totalPages: 0, // Will be updated when backend processes the PDF
           ownerId: this.currentUserId,
-          storageUrl: this.newBook.storageUrl,
+          storageUrl: "uploaded", // Will be the actual GCS URL
           createdAt: new Date().toISOString(),
         };
 
@@ -197,11 +192,13 @@ export default {
         this.closeModal();
         this.resetForm();
 
-        alert("Book added successfully!");
+        alert("Book uploaded successfully!");
       } catch (error) {
-        console.error("Failed to add book:", error);
+        console.error("Failed to upload book:", error);
         alert(
-          `Failed to add book: ${error.response?.data?.error || error.message}`
+          `Failed to upload book: ${
+            error.response?.data?.error || error.message
+          }`
         );
       } finally {
         this.addingBook = false;
@@ -222,9 +219,7 @@ export default {
     resetForm() {
       this.newBook = {
         title: "",
-        totalPages: null,
         file: null,
-        storageUrl: "",
       };
       // Reset file input
       const fileInput = document.getElementById("bookFile");

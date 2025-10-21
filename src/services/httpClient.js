@@ -3,7 +3,7 @@ import { API_CONFIG } from "../config/api.js";
 
 // Create axios instance with base configuration
 const httpClient = axios.create({
-  baseURL: API_CONFIG.BASE_URL,
+  baseURL: API_CONFIG.BASE_URL || undefined, // Use undefined if BASE_URL is empty
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",

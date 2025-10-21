@@ -1,6 +1,6 @@
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: "http://localhost:8000",
+  BASE_URL: "", // Use relative URLs with Vite proxy
   ENDPOINTS: {
     // Annotate endpoints
     ANNOTATE: {
@@ -28,6 +28,7 @@ export const API_CONFIG = {
     },
     // Library endpoints
     LIBRARY: {
+      PREPARE_UPLOAD: "/api/Library/prepareUpload",
       ADD_BOOK: "/api/Library/addBook",
       GET_BOOK: "/api/Library/getBook",
       LIST_BOOKS: "/api/Library/listBooks",

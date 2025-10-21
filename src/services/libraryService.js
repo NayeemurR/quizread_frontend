@@ -3,20 +3,118 @@ import { API_CONFIG } from "../config/api.js";
 
 export const libraryService = {
   /**
+   * Prepare file upload to Google Cloud Storage
+   * @param {string} ownerId - Owner's user ID
+   * @param {string} fileName - Name of the file
+   * @param {string} contentType - MIME type of the file
+   * @returns {Promise<{signedUrl: string, publicUrl: string, fileName: string}>}
+   */
+  async prepareUpload(ownerId, fileName, contentType) {
+    const response = await httpClient.post(
+      API_CONFIG.ENDPOINTS.LIBRARY.PREPARE_UPLOAD,
+      {
+        ownerId,
+        fileName,
+        contentType,
+      }
+    );
+    console.log("Prepare upload response:", response.data);
+    return response.data;
+  },
+
+  /**
+   * Upload file directly to Google Cloud Storage
+   * @param {string} signedUrl - Signed URL from prepareUpload
+   * @param {File} file - File to upload
+   * @param {string} contentType - MIME type of the file
+   * @returns {Promise<Response>}
+   */
+  async uploadToGCS(signedUrl, file, contentType) {
+    console.log("Uploading to GCS:", {
+      signedUrl,
+      fileName: file.name,
+      contentType,
+    });
+
+    try {
+      const response = await fetch(signedUrl, {
+        method: "PUT",
+        body: file,
+        headers: {
+          "Content-Type": contentType,
+        },
+      });
+
+      console.log("GCS upload response:", response.status, response.statusText);
+
+      if (!response.ok) {
+        throw new Error(
+          `GCS upload failed: ${response.status} ${response.statusText}`
+        );
+      }
+
+      return response;
+    } catch (error) {
+      console.error("GCS Upload Error:", error);
+      throw new Error(
+        `Failed to upload to Google Cloud Storage: ${error.message}`
+      );
+    }
+  },
+
+  /**
+   * Complete book upload workflow: prepare upload, upload to GCS, then add book
+   * @param {string} ownerId - Owner's user ID
+   * @param {string} title - Book title
+   * @param {File} file - Book file
+   * @returns {Promise<{bookId: string}>}
+   */
+  async uploadBook(ownerId, title, file) {
+    try {
+      console.log("Starting upload workflow for:", {
+        ownerId,
+        title,
+        fileName: file.name,
+      });
+
+      // Step 1: Prepare upload
+      const { signedUrl, publicUrl, fileName } = await this.prepareUpload(
+        ownerId,
+        file.name,
+        file.type
+      );
+
+      console.log("Got signed URL, uploading to GCS...");
+
+      // Step 2: Upload file to GCS
+      await this.uploadToGCS(signedUrl, file, file.type);
+
+      console.log("GCS upload successful, adding book to library...");
+
+      // Step 3: Add book to library with the public URL
+      const result = await this.addBook(ownerId, title, publicUrl);
+
+      console.log("Book added successfully:", result);
+      return result;
+    } catch (error) {
+      console.error("Upload workflow failed:", error);
+      throw error;
+    }
+  },
+
+  /**
    * Add a new book to user's library
    * @param {string} ownerId - Owner's user ID
    * @param {string} title - Book title
-   * @param {number} totalPages - Total number of pages
    * @param {string} storageUrl - Google Cloud storage URL
    * @returns {Promise<{bookId: string}>}
    */
-  async addBook(ownerId, title, totalPages, storageUrl) {
+  async addBook(ownerId, title, storageUrl) {
     const response = await httpClient.post(
       API_CONFIG.ENDPOINTS.LIBRARY.ADD_BOOK,
       {
         ownerId,
         title,
-        totalPages,
         storageUrl,
       }
     );
