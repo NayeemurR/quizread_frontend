@@ -9,6 +9,9 @@ export const userAuthService = {
    * @returns {Promise<{userId: string}>}
    */
   async register(email, passwordHash) {
+    console.log("Attempting registration for email:", email);
+    console.log("Register endpoint:", API_CONFIG.ENDPOINTS.USER_AUTH.REGISTER);
+
     const response = await httpClient.post(
       API_CONFIG.ENDPOINTS.USER_AUTH.REGISTER,
       {
@@ -16,6 +19,8 @@ export const userAuthService = {
         passwordHash,
       }
     );
+
+    console.log("Registration response:", response.data);
     return response.data;
   },
 
@@ -26,6 +31,9 @@ export const userAuthService = {
    * @returns {Promise<{userId: string}>}
    */
   async login(email, passwordHash) {
+    console.log("Attempting login for email:", email);
+    console.log("Login endpoint:", API_CONFIG.ENDPOINTS.USER_AUTH.LOGIN);
+
     const response = await httpClient.post(
       API_CONFIG.ENDPOINTS.USER_AUTH.LOGIN,
       {
@@ -33,6 +41,8 @@ export const userAuthService = {
         passwordHash,
       }
     );
+
+    console.log("Login response:", response.data);
     return response.data;
   },
 

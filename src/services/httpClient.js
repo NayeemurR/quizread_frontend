@@ -13,7 +13,12 @@ const httpClient = axios.create({
 // Request interceptor
 httpClient.interceptors.request.use(
   (config) => {
-    // Add any auth tokens or other headers here
+    // Add auth token to requests
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
     console.log("Making request to:", config.url);
     return config;
   },
@@ -30,6 +35,15 @@ httpClient.interceptors.response.use(
   },
   (error) => {
     console.error("API Error:", error.response?.data || error.message);
+
+    // Handle authentication errors
+    if (error.response?.status === 401) {
+      // Clear auth data and redirect to login
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("currentUser");
+      window.location.href = "/auth";
+    }
+
     return Promise.reject(error);
   }
 );

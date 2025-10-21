@@ -88,6 +88,7 @@
 
 <script>
 import { apiService } from "../services/apiService.js";
+import { useAuth } from "../stores/auth.js";
 
 export default {
   name: "Library",
@@ -101,12 +102,26 @@ export default {
         title: "",
         file: null,
       },
-      // For demo purposes, using a hardcoded user ID
-      // In a real app, this would come from authentication
-      currentUserId: "demo-user-123",
     };
   },
+  setup() {
+    const { isAuthenticated, userId } = useAuth();
+    return {
+      isAuthenticated,
+      userId,
+    };
+  },
+  computed: {
+    currentUserId() {
+      return this.userId;
+    },
+  },
   async mounted() {
+    // Check if user is authenticated
+    if (!this.isAuthenticated) {
+      this.$router.push({ name: "Auth" });
+      return;
+    }
     await this.loadBooks();
   },
   methods: {
@@ -117,25 +132,9 @@ export default {
         this.books = books;
       } catch (error) {
         console.error("Failed to load books:", error);
-        // For demo purposes, show some mock data if API fails
-        this.books = [
-          {
-            _id: "demo-book-1",
-            title: "The Great Gatsby",
-            totalPages: 180,
-            ownerId: this.currentUserId,
-            storageUrl: "demo-url-1",
-            createdAt: new Date().toISOString(),
-          },
-          {
-            _id: "demo-book-2",
-            title: "To Kill a Mockingbird",
-            totalPages: 281,
-            ownerId: this.currentUserId,
-            storageUrl: "demo-url-2",
-            createdAt: new Date().toISOString(),
-          },
-        ];
+        // Show empty state if API fails
+        this.books = [];
+        alert("Failed to load your books. Please try again.");
       } finally {
         this.loading = false;
       }

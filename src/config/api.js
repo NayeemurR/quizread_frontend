@@ -55,11 +55,11 @@ export const API_CONFIG = {
     },
     // UserAuthentication endpoints
     USER_AUTH: {
-      REGISTER: "/api/UserAuthentication/register",
-      LOGIN: "/api/UserAuthentication/login",
-      GET_USER: "/api/UserAuthentication/_getUser",
-      GET_USER_BY_EMAIL: "/api/UserAuthentication/_getUserByEmail",
-      GET_ALL_USERS: "/api/UserAuthentication/_getAllUsers",
+      REGISTER: "/api/UserAuth/register",
+      LOGIN: "/api/UserAuth/login",
+      GET_USER: "/api/UserAuth/_getUser",
+      GET_USER_BY_EMAIL: "/api/UserAuth/_getUserByEmail",
+      GET_ALL_USERS: "/api/UserAuth/_getAllUsers",
     },
   },
 };
