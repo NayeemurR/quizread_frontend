@@ -23,7 +23,7 @@
         <div v-else class="pdf-container">
           <iframe
             v-if="book.storageUrl && !pdfError"
-            :src="getPdfUrl(book.storageUrl)"
+            :src="getPdfUrl(book.storageUrl, currentPage)"
             class="pdf-viewer"
             frameborder="0"
             @load="onPdfLoad"
@@ -78,6 +78,15 @@
           </div>
         </div>
 
+        <!-- Current Page Display -->
+        <div class="page-display-section">
+          <h3>PAGE #</h3>
+          <div class="current-page-display">{{ currentPage }}</div>
+          <div class="page-info">
+            <span class="page-label">Current Page</span>
+          </div>
+        </div>
+
         <!-- Page Navigation -->
         <div class="page-section">
           <h3>PAGE NAVIGATION</h3>
@@ -128,6 +137,42 @@
         </div>
       </div>
     </div>
+
+    <!-- Quiz Popup -->
+    <div v-if="showQuiz" class="quiz-overlay">
+      <div class="quiz-popup">
+        <div class="quiz-header">
+          <h3>Quiz ⏳</h3>
+        </div>
+        <div class="quiz-content">
+          <p class="quiz-question">{{ currentQuiz.question }}</p>
+          <div class="quiz-options">
+            <label
+              v-for="(option, index) in currentQuiz.options"
+              :key="index"
+              class="quiz-option"
+            >
+              <input
+                type="radio"
+                :name="'quiz-answer'"
+                :value="index"
+                v-model="selectedAnswer"
+              />
+              <span class="option-text">{{ option }}</span>
+            </label>
+          </div>
+        </div>
+        <div class="quiz-actions">
+          <button
+            @click="submitQuiz"
+            class="submit-btn"
+            :disabled="selectedAnswer === null"
+          >
+            Submit
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -158,6 +203,16 @@ export default {
       // Reading session
       sessionId: null,
       startTime: null,
+
+      // Quiz state
+      showQuiz: false,
+      currentQuiz: {
+        question: "",
+        options: [],
+        correctAnswer: 0,
+      },
+      selectedAnswer: null,
+      quizInterval: 2, // Quiz every 2 pages
     };
   },
   computed: {
@@ -328,11 +383,8 @@ export default {
           // Update pages read
           this.pagesRead = this.currentPage;
 
-          // Check if quiz should be triggered
-          const quizTrigger = await apiService.readingProgress.triggerQuiz(
-            this.sessionId
-          );
-          if (quizTrigger.shouldTrigger) {
+          // Check if quiz should be triggered (every 2 pages)
+          if (this.currentPage % this.quizInterval === 0) {
             this.triggerQuiz();
           }
 
@@ -349,8 +401,38 @@ export default {
     },
 
     triggerQuiz() {
-      alert("Time for a quiz! This will be implemented in the next phase.");
-      // TODO: Implement quiz functionality
+      // Generate a sample quiz question
+      this.currentQuiz = {
+        question: `What is the main topic discussed on page ${this.currentPage}?`,
+        options: [
+          "The introduction of new concepts",
+          "A detailed analysis of previous topics",
+          "Practical applications and examples",
+          "A summary of key points",
+        ],
+        correctAnswer: 0,
+      };
+      this.selectedAnswer = null;
+      this.showQuiz = true;
+    },
+
+    submitQuiz() {
+      if (this.selectedAnswer === null) return;
+
+      const isCorrect = this.selectedAnswer === this.currentQuiz.correctAnswer;
+
+      if (isCorrect) {
+        alert("Correct! Well done! 🎉");
+      } else {
+        alert(
+          `Incorrect. The correct answer was: ${
+            this.currentQuiz.options[this.currentQuiz.correctAnswer]
+          }`
+        );
+      }
+
+      this.showQuiz = false;
+      this.selectedAnswer = null;
     },
 
     triggerAnnotation() {
@@ -370,10 +452,15 @@ export default {
       this.pdfError = "Access denied. The PDF file is not publicly accessible.";
     },
 
-    getPdfUrl(storageUrl) {
-      // Try to create a signed URL or use the direct URL
-      // For now, we'll use the direct URL and handle errors gracefully
-      return storageUrl;
+    getPdfUrl(storageUrl, page = 1) {
+      // For single page display, we'll append page parameter
+      // This assumes the PDF viewer supports page parameter
+      const baseUrl = storageUrl;
+      if (baseUrl.includes("#")) {
+        return `${baseUrl}#page=${page}`;
+      } else {
+        return `${baseUrl}#page=${page}`;
+      }
     },
 
     retryPdfLoad() {
@@ -574,6 +661,7 @@ export default {
 
 .timer-section,
 .progress-section,
+.page-display-section,
 .page-section,
 .stats-section {
   background: white;
@@ -584,6 +672,7 @@ export default {
 
 .timer-section h3,
 .progress-section h3,
+.page-display-section h3,
 .page-section h3,
 .stats-section h3 {
   margin: 0 0 1rem 0;
@@ -658,6 +747,25 @@ export default {
   height: 100%;
   background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
   transition: width 0.3s ease;
+}
+
+.current-page-display {
+  font-size: 3rem;
+  font-weight: bold;
+  color: #667eea;
+  text-align: center;
+  margin-bottom: 0.5rem;
+  font-family: "Courier New", monospace;
+}
+
+.page-info {
+  text-align: center;
+}
+
+.page-label {
+  color: #6c757d;
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .page-controls {
@@ -742,9 +850,131 @@ export default {
 
   .timer-section,
   .progress-section,
+  .page-display-section,
   .page-section,
   .stats-section {
     min-width: 200px;
   }
+}
+
+/* Quiz Popup Styles */
+.quiz-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.quiz-popup {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.quiz-header {
+  background: #667eea;
+  color: white;
+  padding: 1.5rem;
+  border-radius: 12px 12px 0 0;
+  text-align: center;
+}
+
+.quiz-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.quiz-content {
+  padding: 2rem;
+}
+
+.quiz-question {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.quiz-option {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.quiz-option:hover {
+  border-color: #667eea;
+  background: #f8f9ff;
+}
+
+.quiz-option input[type="radio"] {
+  margin-right: 1rem;
+  transform: scale(1.2);
+}
+
+.quiz-option input[type="radio"]:checked + .option-text {
+  font-weight: 600;
+  color: #667eea;
+}
+
+.quiz-option:has(input[type="radio"]:checked) {
+  border-color: #667eea;
+  background: #f8f9ff;
+}
+
+.option-text {
+  flex: 1;
+  font-size: 1rem;
+  color: #2c3e50;
+}
+
+.quiz-actions {
+  padding: 1.5rem 2rem;
+  border-top: 1px solid #e9ecef;
+  text-align: center;
+}
+
+.submit-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: #218838;
+  transform: translateY(-1px);
+}
+
+.submit-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  transform: none;
 }
 </style>
