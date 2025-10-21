@@ -207,8 +207,11 @@ export default {
 
     selectBook(book) {
       console.log("Selected book:", book);
-      // TODO: Navigate to book reading view
-      alert(`Selected: ${book.title}`);
+      // Navigate to reading page
+      this.$router.push({
+        name: "Reading",
+        params: { bookId: book._id },
+      });
     },
 
     closeModal() {

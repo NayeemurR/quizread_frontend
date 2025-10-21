@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+CORS_SOLUTION.md
+GCS_CORS_SETUP.md
+DEVELOPMENT.md
+setup-gcs-cors.sh
+gcs-cors-config.json
+GCS_ACCESS_SOLUTION.md

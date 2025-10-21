@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import Library from "../views/Library.vue";
+import Reading from "../views/Reading.vue";
 
 const routes = [
   {
@@ -10,6 +11,12 @@ const routes = [
     path: "/library",
     name: "Library",
     component: Library,
+  },
+  {
+    path: "/reading/:bookId",
+    name: "Reading",
+    component: Reading,
+    props: true,
   },
 ];
 
