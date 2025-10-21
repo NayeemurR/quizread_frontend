@@ -23,6 +23,7 @@
         <div v-else class="pdf-container">
           <iframe
             v-if="book.storageUrl && !pdfError"
+            :key="currentPage"
             :src="getPdfUrl(book.storageUrl, currentPage)"
             class="pdf-viewer"
             frameborder="0"
@@ -457,9 +458,9 @@ export default {
       // This assumes the PDF viewer supports page parameter
       const baseUrl = storageUrl;
       if (baseUrl.includes("#")) {
-        return `${baseUrl}#page=${page}`;
+        return `${baseUrl}#page=${page}&toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0&scrollbar=0`;
       } else {
-        return `${baseUrl}#page=${page}`;
+        return `${baseUrl}#page=${page}&toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0&scrollbar=0`;
       }
     },
 
@@ -604,6 +605,8 @@ export default {
   width: 100%;
   height: 100%;
   border: none;
+  overflow: hidden;
+  pointer-events: none; /* Prevent user interaction with PDF */
 }
 
 .no-pdf {

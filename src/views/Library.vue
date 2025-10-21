@@ -21,7 +21,7 @@
         </div>
         <div class="book-info">
           <h3 class="book-title">{{ book.title }}</h3>
-          <p class="book-pages">{{ book.totalPages }} pages</p>
+          <!-- <p class="book-pages">{{ book.totalPages }} pages</p> -->
         </div>
       </div>
     </div>
@@ -170,7 +170,7 @@ export default {
 
       this.addingBook = true;
       try {
-        // Use the new upload workflow
+        // Use the upload workflow
         const result = await apiService.library.uploadBook(
           this.currentUserId,
           this.newBook.title,
