@@ -50,11 +50,16 @@
       <div class="reading-sidebar">
         <!-- Timer Section -->
         <div class="timer-section">
-          <h3>TIME REMAINING</h3>
-          <div class="timer-display">
-            {{ formatTime(timeRemaining) }}
+          <h3 v-if="!isBreakActive">TIME REMAINING</h3>
+          <h3 v-else class="break-timer-title">BREAK TIME</h3>
+          <div class="timer-display" :class="{ 'break-timer': isBreakActive }">
+            {{
+              isBreakActive
+                ? formatTime(breakTimeRemaining)
+                : formatTime(timeRemaining)
+            }}
           </div>
-          <div class="timer-controls">
+          <div v-if="!isBreakActive" class="timer-controls">
             <button
               @click="toggleTimer"
               :class="['timer-btn', { active: isTimerRunning }]"
@@ -64,6 +69,9 @@
             <button @click="resetTimer" class="timer-btn secondary">
               Reset
             </button>
+          </div>
+          <div v-else class="break-message">
+            <p>Take a break! Navigation is disabled.</p>
           </div>
         </div>
 
@@ -94,7 +102,7 @@
           <div class="page-controls">
             <button
               @click="goToPreviousPage"
-              :disabled="currentPage <= 1"
+              :disabled="currentPage <= 1 || isBreakActive"
               class="page-btn"
             >
               ← Previous
@@ -105,12 +113,15 @@
               type="number"
               :min="1"
               :max="totalPages"
+              :disabled="isBreakActive"
               class="page-input"
               placeholder="Page #"
             />
             <button
               @click="goToNextPage"
-              :disabled="currentPage >= totalPages"
+              :disabled="
+                currentPage >= totalPages || !isTimerRunning || isBreakActive
+              "
               class="page-btn"
             >
               Next →
@@ -203,9 +214,13 @@ export default {
 
       // Timer state
       isTimerRunning: false,
-      timeRemaining: 25 * 60, // 25 minutes in seconds
+      timeRemaining: 0.1 * 60, // 6 seconds for testing
       timeRead: 0,
       timerInterval: null,
+
+      // Break timer state
+      isBreakActive: false,
+      breakTimeRemaining: 0.2 * 60, // 10 seconds for testing
 
       // Page state
       currentPage: 1,
@@ -293,17 +308,49 @@ export default {
 
     async initializeReadingSession() {
       try {
-        // Initialize reading progress session
-        const result = await apiService.readingProgress.initializeProgress(
-          this.userId, // Current user ID
-          this.$route.params.bookId,
-          this.totalPages,
-          5, // Quiz interval (every 5 pages)
-          3 // Annotation interval (every 3 pages)
+        // First, check if there's an existing reading session for this book and user
+        const existingSessions =
+          await apiService.readingProgress.getUserSessions(this.userId);
+
+        // Find existing session for this specific book
+        const existingSession = existingSessions.find(
+          (session) => session.bookId === this.$route.params.bookId
         );
 
-        this.sessionId = result.sessionId;
-        this.startTime = Date.now();
+        if (existingSession) {
+          // Resume existing session
+          console.log("Found existing reading session, resuming...");
+          this.sessionId = existingSession._id;
+          this.currentPage = existingSession.currentPage;
+          this.pageInput = existingSession.currentPage;
+          this.pagesRead = existingSession.currentPage;
+          this.startTime = new Date(existingSession.startTime).getTime();
+
+          // Resume the session if it was paused
+          if (!existingSession.isActive) {
+            await apiService.readingProgress.resumeReading(this.sessionId);
+          }
+
+          console.log(`Resumed reading session at page ${this.currentPage}`);
+        } else {
+          // Create new session
+          console.log("No existing session found, creating new one...");
+          const result = await apiService.readingProgress.initializeProgress(
+            this.userId, // Current user ID
+            this.$route.params.bookId,
+            this.totalPages,
+            2, // Quiz interval (every 2 pages)
+            3 // Annotation interval (every 3 pages)
+          );
+
+          this.sessionId = result.sessionId;
+          this.currentPage = 1; // Start at page 1 for new sessions
+          this.pageInput = 1;
+          this.pagesRead = 0;
+          this.startTime = Date.now();
+
+          console.log("Created new reading session");
+        }
       } catch (error) {
         console.error("Failed to initialize reading session:", error);
       }
@@ -338,15 +385,37 @@ export default {
 
     resetTimer() {
       this.isTimerRunning = false;
+      this.isBreakActive = false;
       this.cleanupTimer();
       this.timeRemaining = 25 * 60; // Reset to 25 minutes
+      this.breakTimeRemaining = 5 * 60; // Reset break timer
       this.timeRead = 0;
     },
 
     timerFinished() {
       this.isTimerRunning = false;
       this.cleanupTimer();
-      alert("Reading session completed! Great job!");
+      this.startBreakTimer();
+    },
+
+    startBreakTimer() {
+      this.isBreakActive = true;
+      this.breakTimeRemaining = 0.2 * 60; // 5 minutes
+
+      this.timerInterval = setInterval(() => {
+        this.breakTimeRemaining--;
+
+        if (this.breakTimeRemaining <= 0) {
+          this.breakFinished();
+        }
+      }, 1000);
+    },
+
+    breakFinished() {
+      this.isBreakActive = false;
+      this.cleanupTimer();
+      this.timeRemaining = 25 * 60; // Reset main timer to 25 minutes
+      alert("Break time is over! You can now continue reading.");
     },
 
     cleanupTimer() {
@@ -417,7 +486,11 @@ export default {
 
     async triggerQuiz() {
       this.quizLoading = true;
+      // hello
       try {
+        // Record that a quiz was triggered at the current page
+        await apiService.readingProgress.recordQuizTriggered(this.sessionId);
+
         // Create quiz directly from PDF content using the new endpoint
         const quizResponse = await checkpointQuizService.createQuizFromPDF(
           this.userId, // Current user ID
@@ -433,11 +506,6 @@ export default {
           this.showFallbackQuiz();
           return;
         }
-
-        // // Get the quiz details
-        // const quizDetails = await checkpointQuizService.getQuiz(
-        //   quizResponse.quizId
-        // );
 
         this.currentQuiz = {
           quizId: quizResponse.quiz._id,
@@ -802,6 +870,29 @@ export default {
   text-align: center;
   margin-bottom: 1rem;
   font-family: "Courier New", monospace;
+}
+
+.timer-display.break-timer {
+  color: #ff6b6b;
+}
+
+.break-timer-title {
+  color: #ff6b6b !important;
+}
+
+.break-message {
+  text-align: center;
+  padding: 1rem;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 5px;
+  margin-top: 1rem;
+}
+
+.break-message p {
+  margin: 0;
+  color: #856404;
+  font-weight: 500;
 }
 
 .timer-controls {
