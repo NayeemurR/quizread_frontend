@@ -150,7 +150,11 @@
 
         <!-- Annotation History -->
         <div class="annotation-history-section">
-          <AnnotationHistory :userId="userId" :bookId="$route.params.bookId" />
+          <AnnotationHistory
+            ref="annotationHistory"
+            :userId="userId"
+            :bookId="$route.params.bookId"
+          />
         </div>
       </div>
     </div>
@@ -711,6 +715,11 @@ export default {
         }
       }
 
+      // Refresh the annotation history to show the new annotation
+      if (this.$refs.annotationHistory) {
+        await this.$refs.annotationHistory.loadAnnotations();
+      }
+
       // Show success message
       this.showSuccess(
         "Annotation Saved",
@@ -720,16 +729,23 @@ export default {
       this.closeAnnotation();
     },
 
-    onAnnotationSkipped() {
+    async onAnnotationSkipped() {
       console.log("Annotation skipped");
 
       // Still record that annotation was triggered (even if skipped)
       if (this.sessionId) {
-        apiService.readingProgress
-          .recordAnnotationTriggered(this.sessionId)
-          .catch((error) =>
-            console.error("Failed to record annotation trigger:", error)
+        try {
+          await apiService.readingProgress.recordAnnotationTriggered(
+            this.sessionId
           );
+        } catch (error) {
+          console.error("Failed to record annotation trigger:", error);
+        }
+      }
+
+      // Refresh the annotation history in case there were other annotations added
+      if (this.$refs.annotationHistory) {
+        await this.$refs.annotationHistory.loadAnnotations();
       }
 
       this.closeAnnotation();
