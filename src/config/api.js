@@ -7,6 +7,7 @@ export const API_CONFIG = {
       SAVE_ANNOTATION: "/api/Annotate/saveAnnotation",
       GET_USER_ANNOTATIONS: "/api/Annotate/_getUserAnnotations",
       GET_ALL_USER_ANNOTATIONS: "/api/Annotate/_getAllUserAnnotations",
+      GET_ANNOTATIONS_FOR_BOOK: "/api/Annotate/_getAnnotationsForBook",
     },
     // CheckpointQuiz endpoints
     CHECKPOINT_QUIZ: {

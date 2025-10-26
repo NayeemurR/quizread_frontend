@@ -75,6 +75,10 @@ export default {
       type: String,
       required: true,
     },
+    bookId: {
+      type: String,
+      required: true,
+    },
     currentPage: {
       type: Number,
       default: 1,
@@ -156,6 +160,7 @@ export default {
       try {
         const result = await annotateService.saveAnnotation(
           this.userId,
+          this.bookId,
           this.annotationData.content,
           this.annotationData.keyIdeas
         );

@@ -89,9 +89,20 @@
 <script>
 import { apiService } from "../services/apiService.js";
 import { useAuth } from "../stores/auth.js";
+import { useNotifications } from "../composables/useNotifications.js";
 
 export default {
   name: "Library",
+  setup() {
+    const { currentUserId } = useAuth();
+    const { showSuccess, showError, showInfo } = useNotifications();
+    return {
+      currentUserId,
+      showSuccess,
+      showError,
+      showInfo,
+    };
+  },
   data() {
     return {
       books: [],
@@ -111,11 +122,7 @@ export default {
       userId,
     };
   },
-  computed: {
-    currentUserId() {
-      return this.userId;
-    },
-  },
+  computed: {},
   async mounted() {
     // Check if user is authenticated
     if (!this.isAuthenticated) {
@@ -134,7 +141,10 @@ export default {
         console.error("Failed to load books:", error);
         // Show empty state if API fails
         this.books = [];
-        alert("Failed to load your books. Please try again.");
+        this.showError(
+          "Loading Error",
+          "Failed to load your books. Please try again."
+        );
       } finally {
         this.loading = false;
       }
@@ -145,7 +155,7 @@ export default {
       if (file) {
         // Validate file type
         if (file.type !== "application/pdf") {
-          alert("Please select a PDF file");
+          this.showError("Invalid File", "Please select a PDF file");
           event.target.value = "";
           return;
         }
@@ -153,7 +163,7 @@ export default {
         // Validate file size (e.g., max 50MB)
         const maxSize = 50 * 1024 * 1024; // 50MB
         if (file.size > maxSize) {
-          alert("File size must be less than 50MB");
+          this.showError("File Too Large", "File size must be less than 50MB");
           event.target.value = "";
           return;
         }
@@ -164,7 +174,10 @@ export default {
 
     async addBook() {
       if (!this.newBook.title || !this.newBook.file) {
-        alert("Please fill in all fields and select a file");
+        this.showError(
+          "Missing Information",
+          "Please fill in all fields and select a file"
+        );
         return;
       }
 
@@ -191,10 +204,11 @@ export default {
         this.closeModal();
         this.resetForm();
 
-        alert("Book uploaded successfully!");
+        this.showSuccess("Upload Successful", "Book uploaded successfully!");
       } catch (error) {
         console.error("Failed to upload book:", error);
-        alert(
+        this.showError(
+          "Upload Failed",
           `Failed to upload book: ${
             error.response?.data?.error || error.message
           }`

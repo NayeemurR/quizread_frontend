@@ -74,6 +74,10 @@ export default {
       type: String,
       required: true,
     },
+    bookId: {
+      type: String,
+      required: true,
+    },
   },
   data() {
     return {
@@ -91,11 +95,12 @@ export default {
       this.error = null;
 
       try {
-        const annotations = await annotateService.getAllUserAnnotations(
-          this.userId
+        const annotations = await annotateService.getAnnotationsForBook(
+          this.userId,
+          this.bookId
         );
         this.annotations = annotations || [];
-        console.log("Loaded annotations:", this.annotations);
+        console.log("Loaded annotations for book:", this.annotations);
       } catch (error) {
         console.error("Failed to load annotations:", error);
         this.error = error.message || "Failed to load annotations";

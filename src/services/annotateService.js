@@ -5,15 +5,17 @@ export const annotateService = {
   /**
    * Save an annotation
    * @param {string} userId - User ID
+   * @param {string} bookId - Book ID
    * @param {string} content - Content being annotated
    * @param {string} keyIdeas - Key ideas from the content
    * @returns {Promise<{annotationId: string}>}
    */
-  async saveAnnotation(userId, content, keyIdeas) {
+  async saveAnnotation(userId, bookId, content, keyIdeas) {
     const response = await httpClient.post(
       API_CONFIG.ENDPOINTS.ANNOTATE.SAVE_ANNOTATION,
       {
         userId,
+        bookId,
         content,
         keyIdeas,
       }
@@ -48,6 +50,23 @@ export const annotateService = {
       API_CONFIG.ENDPOINTS.ANNOTATE.GET_ALL_USER_ANNOTATIONS,
       {
         userId,
+      }
+    );
+    return response.data;
+  },
+
+  /**
+   * Get annotations for a specific book by a user
+   * @param {string} userId - User ID
+   * @param {string} bookId - Book ID
+   * @returns {Promise<Array>}
+   */
+  async getAnnotationsForBook(userId, bookId) {
+    const response = await httpClient.post(
+      API_CONFIG.ENDPOINTS.ANNOTATE.GET_ANNOTATIONS_FOR_BOOK,
+      {
+        userId,
+        bookId,
       }
     );
     return response.data;

@@ -150,7 +150,7 @@
 
         <!-- Annotation History -->
         <div class="annotation-history-section">
-          <AnnotationHistory :userId="userId" />
+          <AnnotationHistory :userId="userId" :bookId="$route.params.bookId" />
         </div>
       </div>
     </div>
@@ -199,6 +199,7 @@
     <AnnotationPopup
       :show="showAnnotation"
       :userId="userId"
+      :bookId="$route.params.bookId"
       :currentPage="currentPage"
       :bookTitle="book.title"
       @annotation-saved="onAnnotationSaved"
@@ -213,6 +214,7 @@
 import { apiService } from "../services/apiService.js";
 import { checkpointQuizService } from "../services/checkpointQuizService.js";
 import { useAuth } from "../stores/auth.js";
+import { useNotifications } from "../composables/useNotifications.js";
 import AnnotationPopup from "../components/AnnotationPopup.vue";
 import AnnotationHistory from "../components/AnnotationHistory.vue";
 
@@ -224,8 +226,12 @@ export default {
   },
   setup() {
     const { userId } = useAuth();
+    const { showSuccess, showError, showInfo } = useNotifications();
     return {
       userId,
+      showSuccess,
+      showError,
+      showInfo,
     };
   },
   data() {
@@ -442,7 +448,7 @@ export default {
       this.isBreakActive = false;
       this.cleanupTimer();
       this.timeRemaining = 25 * 60; // Reset main timer to 25 minutes
-      alert("Break time is over! You can now continue reading.");
+      this.showInfo("Break Time Over", "You can now continue reading!");
     },
 
     cleanupTimer() {
@@ -595,10 +601,11 @@ export default {
           );
 
           if (result.isCorrect) {
-            alert("Correct! Well done! 🎉");
+            this.showSuccess("Correct!", "Well done! 🎉");
           } else {
-            alert(
-              `Incorrect. The correct answer was: ${
+            this.showError(
+              "Incorrect",
+              `The correct answer was: ${
                 this.currentQuiz.options[this.currentQuiz.correctAnswer]
               }`
             );
@@ -609,10 +616,11 @@ export default {
             this.selectedAnswer === this.currentQuiz.correctAnswer;
 
           if (isCorrect) {
-            alert("Correct! Well done! 🎉");
+            this.showSuccess("Correct!", "Well done! 🎉");
           } else {
-            alert(
-              `Incorrect. The correct answer was: ${
+            this.showError(
+              "Incorrect",
+              `The correct answer was: ${
                 this.currentQuiz.options[this.currentQuiz.correctAnswer]
               }`
             );
@@ -625,10 +633,11 @@ export default {
           this.selectedAnswer === this.currentQuiz.correctAnswer;
 
         if (isCorrect) {
-          alert("Correct! Well done! 🎉");
+          this.showSuccess("Correct!", "Well done! 🎉");
         } else {
-          alert(
-            `Incorrect. The correct answer was: ${
+          this.showError(
+            "Incorrect",
+            `The correct answer was: ${
               this.currentQuiz.options[this.currentQuiz.correctAnswer]
             }`
           );
@@ -710,7 +719,10 @@ export default {
       }
 
       // Show success message
-      alert("Annotation saved successfully! 📝");
+      this.showSuccess(
+        "Annotation Saved",
+        "Your annotation has been saved successfully! 📝"
+      );
 
       this.closeAnnotation();
     },
@@ -733,7 +745,10 @@ export default {
     onAnnotationError(errorMessage) {
       console.error("Annotation error:", errorMessage);
       this.annotationError = errorMessage;
-      alert(`Failed to save annotation: ${errorMessage}`);
+      this.showError(
+        "Annotation Error",
+        `Failed to save annotation: ${errorMessage}`
+      );
     },
 
     closeAnnotation() {
