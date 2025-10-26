@@ -94,10 +94,11 @@ import { useNotifications } from "../composables/useNotifications.js";
 export default {
   name: "Library",
   setup() {
-    const { currentUserId } = useAuth();
+    const { isAuthenticated, userId } = useAuth();
     const { showSuccess, showError, showInfo } = useNotifications();
     return {
-      currentUserId,
+      isAuthenticated,
+      userId,
       showSuccess,
       showError,
       showInfo,
@@ -115,13 +116,6 @@ export default {
       },
     };
   },
-  setup() {
-    const { isAuthenticated, userId } = useAuth();
-    return {
-      isAuthenticated,
-      userId,
-    };
-  },
   computed: {},
   async mounted() {
     // Check if user is authenticated
@@ -135,7 +129,7 @@ export default {
     async loadBooks() {
       this.loading = true;
       try {
-        const books = await apiService.library.getUserBooks(this.currentUserId);
+        const books = await apiService.library.getUserBooks(this.userId);
         this.books = books;
       } catch (error) {
         console.error("Failed to load books:", error);
@@ -185,7 +179,7 @@ export default {
       try {
         // Use the upload workflow
         const result = await apiService.library.uploadBook(
-          this.currentUserId,
+          this.userId,
           this.newBook.title,
           this.newBook.file
         );
@@ -195,7 +189,7 @@ export default {
           _id: result.bookId,
           title: this.newBook.title,
           totalPages: 0, // Will be updated when backend processes the PDF
-          ownerId: this.currentUserId,
+          ownerId: this.userId,
           storageUrl: "uploaded", // Will be the actual GCS URL
           createdAt: new Date().toISOString(),
         };

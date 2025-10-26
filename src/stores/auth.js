@@ -105,6 +105,8 @@ export function useAuth() {
         };
       }
 
+      console.log("LOGIN RESPONSE USER ID:", response);
+
       // Store user info
       currentUser.value = {
         userId: response.userId,

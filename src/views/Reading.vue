@@ -501,7 +501,13 @@ export default {
           this.pagesRead = this.currentPage;
 
           // Check if quiz should be triggered (every 2 pages)
-          if (this.currentPage % this.quizInterval === 0) {
+          // if (this.currentPage % this.quizInterval === 0) {
+          //   this.triggerQuiz();
+          // }
+          const quizTrigger = await apiService.readingProgress.triggerQuiz(
+            this.sessionId
+          );
+          if (quizTrigger.shouldTrigger) {
             this.triggerQuiz();
           }
 
@@ -549,19 +555,6 @@ export default {
         this.selectedAnswer = null;
         this.showQuiz = true;
 
-        // if (quizDetails && quizDetails.length > 0) {
-        //   const quiz = quizDetails[0];
-        //   this.currentQuiz = {
-        //     quizId: quizResponse.quizId,
-        //     question: quiz.question,
-        //     options: quiz.options,
-        //     correctAnswer: quiz.correctAnswer,
-        //   };
-        //   this.selectedAnswer = null;
-        //   this.showQuiz = true;
-        // } else {
-        //   console.error("No quiz details returned");
-        //   this.showFallbackQuiz();
         // }
       } catch (error) {
         console.error("Failed to create quiz:", error);
