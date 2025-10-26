@@ -67,14 +67,16 @@ export const libraryService = {
    * @param {string} ownerId - Owner's user ID
    * @param {string} title - Book title
    * @param {File} file - Book file
+   * @param {number} totalPages - Total number of pages in the book
    * @returns {Promise<{bookId: string}>}
    */
-  async uploadBook(ownerId, title, file) {
+  async uploadBook(ownerId, title, file, totalPages) {
     try {
       console.log("Starting upload workflow for:", {
         ownerId,
         title,
         fileName: file.name,
+        totalPages,
       });
 
       // Step 1: Prepare upload
@@ -91,8 +93,8 @@ export const libraryService = {
 
       console.log("GCS upload successful, adding book to library...");
 
-      // Step 3: Add book to library with the public URL
-      const result = await this.addBook(ownerId, title, publicUrl);
+      // Step 3: Add book to library with the public URL and page count
+      const result = await this.addBook(ownerId, title, publicUrl, totalPages);
 
       console.log("Book added successfully:", result);
       return result;
@@ -107,15 +109,17 @@ export const libraryService = {
    * @param {string} ownerId - Owner's user ID
    * @param {string} title - Book title
    * @param {string} storageUrl - Google Cloud storage URL
+   * @param {number} totalPages - Total number of pages in the book
    * @returns {Promise<{bookId: string}>}
    */
-  async addBook(ownerId, title, storageUrl) {
+  async addBook(ownerId, title, storageUrl, totalPages) {
     const response = await httpClient.post(
       API_CONFIG.ENDPOINTS.LIBRARY.ADD_BOOK,
       {
         ownerId,
         title,
         storageUrl,
+        totalPages,
       }
     );
     return response.data;

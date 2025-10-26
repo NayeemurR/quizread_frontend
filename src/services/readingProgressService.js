@@ -18,15 +18,18 @@ export const readingProgressService = {
     quizInterval,
     annotationInterval
   ) {
+    const requestData = {
+      userId,
+      bookId,
+      totalPages,
+      quizInterval,
+      annotationInterval,
+    };
+    console.log("Sending initializeProgress request:", requestData);
+
     const response = await httpClient.post(
       API_CONFIG.ENDPOINTS.READING_PROGRESS.INITIALIZE_PROGRESS,
-      {
-        userId,
-        bookId,
-        totalPages,
-        quizInterval,
-        annotationInterval,
-      }
+      requestData
     );
     return response.data;
   },

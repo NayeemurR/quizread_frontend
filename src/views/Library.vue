@@ -90,6 +90,7 @@
 import { apiService } from "../services/apiService.js";
 import { useAuth } from "../stores/auth.js";
 import { useNotifications } from "../composables/useNotifications.js";
+import { getPdfPageCount } from "../utils/pdfUtils.js";
 
 export default {
   name: "Library",
@@ -177,18 +178,25 @@ export default {
 
       this.addingBook = true;
       try {
+        // Extract page count from PDF before uploading
+        this.showInfo("Processing PDF", "Extracting page count from PDF...");
+        const totalPages = await getPdfPageCount(this.newBook.file);
+
+        console.log("Total pages:", totalPages);
+
         // Use the upload workflow
         const result = await apiService.library.uploadBook(
           this.userId,
           this.newBook.title,
-          this.newBook.file
+          this.newBook.file,
+          totalPages
         );
 
-        // Add the new book to the local list
+        // Add the new book to the local list with correct page count
         const newBook = {
           _id: result.bookId,
           title: this.newBook.title,
-          totalPages: 0, // Will be updated when backend processes the PDF
+          totalPages: totalPages, // Use extracted page count
           ownerId: this.userId,
           storageUrl: "uploaded", // Will be the actual GCS URL
           createdAt: new Date().toISOString(),
@@ -198,7 +206,10 @@ export default {
         this.closeModal();
         this.resetForm();
 
-        this.showSuccess("Upload Successful", "Book uploaded successfully!");
+        this.showSuccess(
+          "Upload Successful",
+          `Book uploaded successfully! (${totalPages} pages)`
+        );
       } catch (error) {
         console.error("Failed to upload book:", error);
         this.showError(

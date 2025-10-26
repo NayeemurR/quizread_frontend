@@ -221,6 +221,7 @@ import { useAuth } from "../stores/auth.js";
 import { useNotifications } from "../composables/useNotifications.js";
 import AnnotationPopup from "../components/AnnotationPopup.vue";
 import AnnotationHistory from "../components/AnnotationHistory.vue";
+import { getPdfPageCount } from "../utils/pdfUtils.js";
 
 export default {
   name: "Reading",
@@ -331,7 +332,24 @@ export default {
 
         if (bookData) {
           this.book = bookData;
-          this.totalPages = this.book.totalPages || 100; // Default if not available
+          console.log("Loaded book data:", bookData);
+          console.log("Total pages from book:", this.book.totalPages);
+          console.log("Type of totalPages:", typeof this.book.totalPages);
+          console.log("totalPages value:", this.book.totalPages);
+
+          // Check if totalPages is valid (greater than 0)
+          if (this.book.totalPages && this.book.totalPages > 0) {
+            this.totalPages = this.book.totalPages;
+            console.log("Using totalPages from book:", this.totalPages);
+          } else {
+            console.warn(
+              "Book totalPages is invalid, attempting to extract from PDF..."
+            );
+            // Try to extract page count from PDF as fallback
+            await this.extractPageCountFromPdf();
+          }
+
+          console.log("Final totalPages:", this.totalPages);
         } else {
           throw new Error("Book not found");
         }
@@ -340,6 +358,43 @@ export default {
         this.error = error.message;
       } finally {
         this.loading = false;
+      }
+    },
+
+    async extractPageCountFromPdf() {
+      try {
+        if (this.book.storageUrl && this.book.storageUrl !== "uploaded") {
+          console.log(
+            "Attempting to extract page count from PDF URL:",
+            this.book.storageUrl
+          );
+
+          // Fetch the PDF from the storage URL
+          const response = await fetch(this.book.storageUrl);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch PDF: ${response.status}`);
+          }
+
+          const arrayBuffer = await response.arrayBuffer();
+          const blob = new Blob([arrayBuffer], { type: "application/pdf" });
+          const file = new File([blob], "book.pdf", {
+            type: "application/pdf",
+          });
+
+          // Extract page count
+          const pageCount = await getPdfPageCount(file);
+          this.totalPages = pageCount;
+          console.log("Successfully extracted page count from PDF:", pageCount);
+
+          // Update the book data locally
+          this.book.totalPages = pageCount;
+        } else {
+          console.warn("No valid PDF URL available for page count extraction");
+          this.totalPages = 100; // Fallback to default
+        }
+      } catch (error) {
+        console.error("Failed to extract page count from PDF:", error);
+        this.totalPages = 100; // Fallback to default
       }
     },
 
@@ -372,6 +427,10 @@ export default {
         } else {
           // Create new session
           console.log("No existing session found, creating new one...");
+          console.log(
+            "Sending totalPages to initializeProgress:",
+            this.totalPages
+          );
           const result = await apiService.readingProgress.initializeProgress(
             this.userId, // Current user ID
             this.$route.params.bookId,
