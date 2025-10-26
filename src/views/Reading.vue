@@ -21,15 +21,16 @@
         </div>
 
         <div v-else class="pdf-container">
-          <iframe
-            v-if="book.storageUrl && !pdfError"
-            :key="currentPage"
-            :src="getPdfUrl(book.storageUrl, currentPage)"
-            class="pdf-viewer"
-            frameborder="0"
-            @load="onPdfLoad"
-            @error="onPdfError"
-          ></iframe>
+          <div v-if="book.storageUrl && !pdfError" class="pdf-wrapper">
+            <iframe
+              :key="currentPage"
+              :src="getPdfUrl(book.storageUrl, currentPage)"
+              class="pdf-viewer"
+              frameborder="0"
+              @load="onPdfLoad"
+              @error="onPdfError"
+            ></iframe>
+          </div>
           <div v-else-if="pdfError" class="pdf-error">
             <div class="error-icon">🔒</div>
             <h3>PDF Access Restricted</h3>
@@ -724,9 +725,9 @@ export default {
       // This assumes the PDF viewer supports page parameter
       const baseUrl = storageUrl;
       if (baseUrl.includes("#")) {
-        return `${baseUrl}#page=${page}&toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0&scrollbar=0`;
+        return `${baseUrl}#page=${page}&toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0&scrollbar=0&view=FitH&pagemode=none&disableWorker=true`;
       } else {
-        return `${baseUrl}#page=${page}&toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0&scrollbar=0`;
+        return `${baseUrl}#page=${page}&toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0&scrollbar=0&view=FitH&pagemode=none&disableWorker=true`;
       }
     },
 
@@ -930,14 +931,32 @@ export default {
 .pdf-container {
   height: 100%;
   position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pdf-wrapper {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .pdf-viewer {
   width: 100%;
   height: 100%;
+  max-height: 1500px;
   border: none;
   overflow: hidden;
   pointer-events: none; /* Prevent user interaction with PDF */
+  object-fit: contain;
+  aspect-ratio: 8.5 / 11; /* Standard letter page ratio */
 }
 
 .no-pdf {
