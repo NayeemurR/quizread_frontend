@@ -147,6 +147,11 @@
             </div>
           </div>
         </div>
+
+        <!-- Annotation History -->
+        <div class="annotation-history-section">
+          <AnnotationHistory :userId="userId" />
+        </div>
       </div>
     </div>
 
@@ -189,6 +194,18 @@
         </div>
       </div>
     </div>
+
+    <!-- Annotation Popup -->
+    <AnnotationPopup
+      :show="showAnnotation"
+      :userId="userId"
+      :currentPage="currentPage"
+      :bookTitle="book.title"
+      @annotation-saved="onAnnotationSaved"
+      @annotation-skipped="onAnnotationSkipped"
+      @annotation-error="onAnnotationError"
+      @close="closeAnnotation"
+    />
   </div>
 </template>
 
@@ -196,9 +213,15 @@
 import { apiService } from "../services/apiService.js";
 import { checkpointQuizService } from "../services/checkpointQuizService.js";
 import { useAuth } from "../stores/auth.js";
+import AnnotationPopup from "../components/AnnotationPopup.vue";
+import AnnotationHistory from "../components/AnnotationHistory.vue";
 
 export default {
   name: "Reading",
+  components: {
+    AnnotationPopup,
+    AnnotationHistory,
+  },
   setup() {
     const { userId } = useAuth();
     return {
@@ -243,6 +266,10 @@ export default {
       selectedAnswer: null,
       quizInterval: 3, // Quiz every 3 pages
       quizLoading: false,
+
+      // Annotation state
+      showAnnotation: false,
+      annotationError: null,
     };
   },
   computed: {
@@ -614,10 +641,7 @@ export default {
 
     triggerAnnotation() {
       console.log("Triggering annotation");
-      // alert(
-      //   "Time to make an annotation! This will be implemented in the next phase."
-      // );
-      // TODO: Implement annotation functionality
+      this.showAnnotation = true;
     },
 
     onPdfLoad() {
@@ -668,6 +692,53 @@ export default {
 
     goBack() {
       this.$router.push("/library");
+    },
+
+    // Annotation event handlers
+    async onAnnotationSaved(annotationData) {
+      console.log("Annotation saved:", annotationData);
+
+      // Record that annotation was triggered at current page
+      if (this.sessionId) {
+        try {
+          await apiService.readingProgress.recordAnnotationTriggered(
+            this.sessionId
+          );
+        } catch (error) {
+          console.error("Failed to record annotation trigger:", error);
+        }
+      }
+
+      // Show success message
+      alert("Annotation saved successfully! 📝");
+
+      this.closeAnnotation();
+    },
+
+    onAnnotationSkipped() {
+      console.log("Annotation skipped");
+
+      // Still record that annotation was triggered (even if skipped)
+      if (this.sessionId) {
+        apiService.readingProgress
+          .recordAnnotationTriggered(this.sessionId)
+          .catch((error) =>
+            console.error("Failed to record annotation trigger:", error)
+          );
+      }
+
+      this.closeAnnotation();
+    },
+
+    onAnnotationError(errorMessage) {
+      console.error("Annotation error:", errorMessage);
+      this.annotationError = errorMessage;
+      alert(`Failed to save annotation: ${errorMessage}`);
+    },
+
+    closeAnnotation() {
+      this.showAnnotation = false;
+      this.annotationError = null;
     },
   },
 };
@@ -843,7 +914,8 @@ export default {
 .progress-section,
 .page-display-section,
 .page-section,
-.stats-section {
+.stats-section,
+.annotation-history-section {
   background: white;
   border-radius: 8px;
   padding: 1.5rem;
@@ -861,6 +933,11 @@ export default {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.annotation-history-section {
+  padding: 0;
+  overflow: hidden;
 }
 
 .timer-display {
@@ -1055,7 +1132,8 @@ export default {
   .progress-section,
   .page-display-section,
   .page-section,
-  .stats-section {
+  .stats-section,
+  .annotation-history-section {
     min-width: 200px;
   }
 }
