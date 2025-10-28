@@ -249,13 +249,13 @@ export default {
 
       // Timer state
       isTimerRunning: false,
-      timeRemaining: 0.1 * 60, // 6 seconds for testing
+      timeRemaining: 25 * 60, // 25 minutes
       timeRead: 0,
       timerInterval: null,
 
       // Break timer state
       isBreakActive: false,
-      breakTimeRemaining: 0.2 * 60, // 10 seconds for testing
+      breakTimeRemaining: 5 * 60, // 5 minutes
 
       // Page state
       currentPage: 1,
@@ -333,15 +333,10 @@ export default {
 
         if (bookData) {
           this.book = bookData;
-          console.log("Loaded book data:", bookData);
-          console.log("Total pages from book:", this.book.totalPages);
-          console.log("Type of totalPages:", typeof this.book.totalPages);
-          console.log("totalPages value:", this.book.totalPages);
 
           // Check if totalPages is valid (greater than 0)
           if (this.book.totalPages && this.book.totalPages > 0) {
             this.totalPages = this.book.totalPages;
-            console.log("Using totalPages from book:", this.totalPages);
           } else {
             console.warn(
               "Book totalPages is invalid, attempting to extract from PDF..."
@@ -349,8 +344,6 @@ export default {
             // Try to extract page count from PDF as fallback
             await this.extractPageCountFromPdf();
           }
-
-          console.log("Final totalPages:", this.totalPages);
         } else {
           throw new Error("Book not found");
         }
@@ -365,11 +358,6 @@ export default {
     async extractPageCountFromPdf() {
       try {
         if (this.book.storageUrl && this.book.storageUrl !== "uploaded") {
-          console.log(
-            "Attempting to extract page count from PDF URL:",
-            this.book.storageUrl
-          );
-
           // Fetch the PDF from the storage URL
           const response = await fetch(this.book.storageUrl);
           if (!response.ok) {
@@ -385,7 +373,6 @@ export default {
           // Extract page count
           const pageCount = await getPdfPageCount(file);
           this.totalPages = pageCount;
-          console.log("Successfully extracted page count from PDF:", pageCount);
 
           // Update the book data locally
           this.book.totalPages = pageCount;
@@ -412,7 +399,6 @@ export default {
 
         if (existingSession) {
           // Resume existing session
-          console.log("Found existing reading session, resuming...");
           this.sessionId = existingSession._id;
           this.currentPage = existingSession.currentPage;
           this.pageInput = existingSession.currentPage;
@@ -423,15 +409,8 @@ export default {
           if (!existingSession.isActive) {
             await apiService.readingProgress.resumeReading(this.sessionId);
           }
-
-          console.log(`Resumed reading session at page ${this.currentPage}`);
         } else {
           // Create new session
-          console.log("No existing session found, creating new one...");
-          console.log(
-            "Sending totalPages to initializeProgress:",
-            this.totalPages
-          );
           const result = await apiService.readingProgress.initializeProgress(
             this.userId, // Current user ID
             this.$route.params.bookId,
@@ -445,8 +424,6 @@ export default {
           this.pageInput = 1;
           this.pagesRead = 0;
           this.startTime = Date.now();
-
-          console.log("Created new reading session");
         }
       } catch (error) {
         console.error("Failed to initialize reading session:", error);
@@ -564,10 +541,6 @@ export default {
           // Update pages read
           this.pagesRead = this.currentPage;
 
-          // Check if quiz should be triggered (every 2 pages)
-          // if (this.currentPage % this.quizInterval === 0) {
-          //   this.triggerQuiz();
-          // }
           const quizTrigger = await apiService.readingProgress.triggerQuiz(
             this.sessionId
           );
@@ -601,9 +574,6 @@ export default {
           this.currentPage,
           2 // Extract last 2 pages
         );
-
-        console.log("quiz response,", quizResponse);
-
         if ("error" in quizResponse) {
           console.error("Failed to create quiz from PDF:", quizResponse.error);
           this.showFallbackQuiz();
@@ -618,8 +588,6 @@ export default {
         };
         this.selectedAnswer = null;
         this.showQuiz = true;
-
-        // }
       } catch (error) {
         console.error("Failed to create quiz:", error);
         this.showFallbackQuiz();
@@ -706,17 +674,14 @@ export default {
     },
 
     triggerAnnotation() {
-      console.log("Triggering annotation");
       this.showAnnotation = true;
     },
 
     onPdfLoad() {
-      console.log("PDF loaded successfully");
       this.pdfError = null;
     },
 
     onPdfError() {
-      console.log("PDF failed to load - likely access denied");
       this.pdfError = "Access denied. The PDF file is not publicly accessible.";
     },
 
@@ -762,8 +727,6 @@ export default {
 
     // Annotation event handlers
     async onAnnotationSaved(annotationData) {
-      console.log("Annotation saved:", annotationData);
-
       // Record that annotation was triggered at current page
       if (this.sessionId) {
         try {
@@ -790,8 +753,6 @@ export default {
     },
 
     async onAnnotationSkipped() {
-      console.log("Annotation skipped");
-
       // Still record that annotation was triggered (even if skipped)
       if (this.sessionId) {
         try {

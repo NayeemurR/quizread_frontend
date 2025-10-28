@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from "vue-router";
 import Library from "../views/Library.vue";
 import Reading from "../views/Reading.vue";
 import Auth from "../views/Auth.vue";
-import BookCoverDemo from "../views/BookCoverDemo.vue";
 import { useAuth } from "../stores/auth.js";
 
 const routes = [
@@ -28,11 +27,6 @@ const routes = [
     component: Reading,
     props: true,
     meta: { requiresAuth: true },
-  },
-  {
-    path: "/demo",
-    name: "BookCoverDemo",
-    component: BookCoverDemo,
   },
 ];
 
