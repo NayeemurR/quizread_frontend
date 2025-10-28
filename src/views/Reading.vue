@@ -474,7 +474,7 @@ export default {
 
     startBreakTimer() {
       this.isBreakActive = true;
-      this.breakTimeRemaining = 0.2 * 60; // 5 minutes
+      this.breakTimeRemaining = 5 * 60; // 5 minutes
 
       this.timerInterval = setInterval(() => {
         this.breakTimeRemaining--;
