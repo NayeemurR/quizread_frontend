@@ -15,20 +15,26 @@
         @click="selectBook(book)"
       >
         <div class="book-cover">
-          <div class="book-placeholder">
-            <span class="book-icon">📖</span>
-          </div>
-        </div>
-        <div class="book-info">
-          <h3 class="book-title">{{ book.title }}</h3>
-          <!-- <p class="book-pages">{{ book.totalPages }} pages</p> -->
+          <BookCover
+            :title="book.title"
+            :width="160"
+            :height="200"
+            variant="gradient"
+          />
         </div>
       </div>
     </div>
 
     <div v-else class="empty-library">
       <div class="empty-state">
-        <div class="empty-icon">📚</div>
+        <div class="empty-icon">
+          <BookCover
+            title="Your First Book"
+            :width="120"
+            :height="160"
+            variant="default"
+          />
+        </div>
         <h2>No books yet</h2>
         <p>Add your first book to get started with reading!</p>
         <button @click="showAddBookModal = true" class="add-first-book-btn">
@@ -91,9 +97,13 @@ import { apiService } from "../services/apiService.js";
 import { useAuth } from "../stores/auth.js";
 import { useNotifications } from "../composables/useNotifications.js";
 import { getPdfPageCount } from "../utils/pdfUtils.js";
+import BookCover from "../components/BookCover.vue";
 
 export default {
   name: "Library",
+  components: {
+    BookCover,
+  },
   setup() {
     const { isAuthenticated, userId } = useAuth();
     const { showSuccess, showError, showInfo } = useNotifications();
@@ -318,22 +328,9 @@ export default {
 
 .book-cover {
   margin-bottom: 1rem;
-}
-
-.book-placeholder {
-  width: 100%;
-  height: 120px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border-radius: 8px;
   display: flex;
-  align-items: center;
   justify-content: center;
-  border: 2px dashed #dee2e6;
-}
-
-.book-icon {
-  font-size: 2rem;
-  color: #6c757d;
+  align-items: center;
 }
 
 .book-info {
@@ -370,8 +367,10 @@ export default {
 }
 
 .empty-icon {
-  font-size: 4rem;
   margin-bottom: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .empty-state h2 {
