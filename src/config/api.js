@@ -1,3 +1,5 @@
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
+
 // API Configuration
 export const API_CONFIG = {
   BASE_URL: "", // Use relative URLs with Vite proxy
