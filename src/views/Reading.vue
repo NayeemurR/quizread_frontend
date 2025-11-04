@@ -103,7 +103,12 @@
           <div class="page-controls">
             <button
               @click="goToPreviousPage"
-              :disabled="currentPage <= 1 || isBreakActive"
+              :disabled="
+                currentPage <= 1 ||
+                isBreakActive ||
+                quizLoading ||
+                annotationGenerating
+              "
               class="page-btn"
             >
               ← Previous
@@ -114,14 +119,18 @@
               type="number"
               :min="1"
               :max="totalPages"
-              :disabled="isBreakActive"
+              :disabled="isBreakActive || quizLoading || annotationGenerating"
               class="page-input"
               placeholder="Page #"
             />
             <button
               @click="goToNextPage"
               :disabled="
-                currentPage >= totalPages || !isTimerRunning || isBreakActive
+                currentPage >= totalPages ||
+                !isTimerRunning ||
+                isBreakActive ||
+                quizLoading ||
+                annotationGenerating
               "
               class="page-btn"
             >
@@ -207,6 +216,7 @@
       :bookId="$route.params.bookId"
       :currentPage="currentPage"
       :bookTitle="book.title"
+      :generating="annotationGenerating"
       @annotation-saved="onAnnotationSaved"
       @annotation-skipped="onAnnotationSkipped"
       @annotation-error="onAnnotationError"
@@ -282,6 +292,7 @@ export default {
       // Annotation state
       showAnnotation: false,
       annotationError: null,
+      annotationGenerating: false,
     };
   },
   computed: {
@@ -562,7 +573,7 @@ export default {
 
     async triggerQuiz() {
       this.quizLoading = true;
-      // hello
+      this.showQuiz = true; // Show popup immediately with loading state
       try {
         // Record that a quiz was triggered at the current page
         await apiService.readingProgress.recordQuizTriggered(this.sessionId);
@@ -587,7 +598,6 @@ export default {
           correctAnswer: quizResponse.quiz.correctIndex,
         };
         this.selectedAnswer = null;
-        this.showQuiz = true;
       } catch (error) {
         console.error("Failed to create quiz:", error);
         this.showFallbackQuiz();
@@ -673,8 +683,19 @@ export default {
       this.selectedAnswer = null;
     },
 
-    triggerAnnotation() {
-      this.showAnnotation = true;
+    async triggerAnnotation() {
+      this.annotationGenerating = true;
+      this.showAnnotation = true; // Show popup immediately with loading state
+      // Simulate generation delay if needed, or remove this if generation happens instantly
+      // For now, we'll show the popup immediately and the generating state will be cleared
+      // when the user can interact with the form
+      await this.$nextTick();
+      // If there's actual generation work, do it here
+      // For now, we'll just set generating to false after a brief moment
+      // to show the loading state
+      setTimeout(() => {
+        this.annotationGenerating = false;
+      }, 500); // Small delay to show loading state
     },
 
     onPdfLoad() {
@@ -784,6 +805,7 @@ export default {
     closeAnnotation() {
       this.showAnnotation = false;
       this.annotationError = null;
+      this.annotationGenerating = false;
     },
   },
 };

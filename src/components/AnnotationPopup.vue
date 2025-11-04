@@ -13,6 +13,11 @@
         <p>Saving your annotation...</p>
       </div>
 
+      <div v-else-if="generating" class="annotation-loading">
+        <div class="spinner"></div>
+        <p>Generating annotation...</p>
+      </div>
+
       <div v-else class="annotation-content">
         <div class="annotation-form">
           <div class="form-group">
@@ -47,7 +52,7 @@
         </div>
       </div>
 
-      <div v-if="!loading" class="annotation-actions">
+      <div v-if="!loading && !generating" class="annotation-actions">
         <button
           @click="saveAnnotation"
           class="save-btn"
@@ -86,6 +91,10 @@ export default {
     bookTitle: {
       type: String,
       default: "",
+    },
+    generating: {
+      type: Boolean,
+      default: false,
     },
   },
   data() {

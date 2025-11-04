@@ -7,44 +7,56 @@
       </button>
     </div>
 
-    <div class="books-grid" v-if="books.length > 0">
-      <div
-        v-for="book in books"
-        :key="book._id"
-        class="book-card"
-        @click="selectBook(book)"
-      >
-        <div class="book-cover">
-          <BookCover
-            :title="book.title"
-            :width="160"
-            :height="200"
-            variant="gradient"
-          />
-        </div>
-      </div>
+    <!-- Loading State -->
+    <div v-if="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading your books...</p>
     </div>
 
-    <div v-else class="empty-library">
-      <div class="empty-state">
-        <div class="empty-icon">
-          <BookCover
-            title="Your First Book"
-            :width="120"
-            :height="160"
-            variant="default"
-          />
+    <div v-else>
+      <div class="books-grid" v-if="books.length > 0">
+        <div
+          v-for="book in books"
+          :key="book._id"
+          class="book-card"
+          @click="selectBook(book)"
+        >
+          <div class="book-cover">
+            <BookCover
+              :title="book.title"
+              :width="160"
+              :height="200"
+              variant="gradient"
+            />
+          </div>
         </div>
-        <h2>No books yet</h2>
-        <p>Add your first book to get started with reading!</p>
-        <button @click="showAddBookModal = true" class="add-first-book-btn">
-          Add your first book
-        </button>
+      </div>
+
+      <div v-else class="empty-library">
+        <div class="empty-state">
+          <div class="empty-icon">
+            <BookCover
+              title="Your First Book"
+              :width="120"
+              :height="160"
+              variant="default"
+            />
+          </div>
+          <h2>No books yet</h2>
+          <p>Add your first book to get started with reading!</p>
+          <button @click="showAddBookModal = true" class="add-first-book-btn">
+            Add your first book
+          </button>
+        </div>
       </div>
     </div>
 
     <!-- Add Book Modal -->
-    <div v-if="showAddBookModal" class="modal-overlay" @click="closeModal">
+    <div
+      v-if="showAddBookModal && !loading"
+      class="modal-overlay"
+      @click="closeModal"
+    >
       <div class="modal-content" @click.stop>
         <div class="modal-header">
           <h2>Add New Book</h2>
@@ -82,12 +94,6 @@
           </div>
         </form>
       </div>
-    </div>
-
-    <!-- Loading State -->
-    <div v-if="loading" class="loading-state">
-      <div class="spinner"></div>
-      <p>Loading your books...</p>
     </div>
   </div>
 </template>

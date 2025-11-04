@@ -1,10 +1,11 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 // Use environment variable if provided, otherwise default to backend URL for production
 // In development, you can set VITE_API_BASE_URL="" to use relative URLs with Vite proxy
 // const API_BASE =
 //   import.meta.env.VITE_API_BASE_URL !== undefined
 //     ? import.meta.env.VITE_API_BASE_URL
 //     : "https://quizread-backend.onrender.com";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
 // API Configuration
 export const API_CONFIG = {
