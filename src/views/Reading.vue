@@ -259,7 +259,7 @@ export default {
 
       // Timer state
       isTimerRunning: false,
-      timeRemaining: 0.1 * 60, // 25 minutes
+      timeRemaining: 25 * 60, // 25 minutes
       timeRead: 0,
       timerInterval: null,
 
